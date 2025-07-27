@@ -3,15 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Lightbulb, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useSubscription } from "@/hooks/useSubscription";
+import { UpgradePrompt } from "./UpgradePrompt";
 
 interface MotivationalTipsProps {
   className?: string;
+  onOpenPricing?: () => void;
 }
 
-export function MotivationalTips({ className }: MotivationalTipsProps) {
+export function MotivationalTips({ className, onOpenPricing }: MotivationalTipsProps) {
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
+  const { hasFeature } = useSubscription();
 
-  const tips = [
+  const basicTips = [
     {
       title: "5-Minute Rule 🏃‍♂️",
       content: "When urges hit, do 5 minutes of exercise - pushups, jumping jacks, or a cold shower. Physical activity rewires your brain!"
@@ -21,12 +25,16 @@ export function MotivationalTips({ className }: MotivationalTipsProps) {
       content: "Urges are temporary waves. Take 10 deep breaths and remind yourself: 'This feeling will pass in 15-20 minutes.'"
     },
     {
-      title: "Channel Your Energy 🎯",
-      content: "Redirect that energy into something creative - write, draw, learn a skill, or call a friend. You're transforming, not just resisting!"
-    },
-    {
       title: "Your Future Self 🌟",
       content: "Picture yourself 30 days from now - how proud and confident you'll feel. That person is counting on the choice you make right now."
+    }
+  ];
+
+  const premiumTips = [
+    ...basicTips,
+    {
+      title: "Channel Your Energy 🎯",
+      content: "Redirect that energy into something creative - write, draw, learn a skill, or call a friend. You're transforming, not just resisting!"
     },
     {
       title: "Progress Over Perfection 📈",
@@ -43,8 +51,18 @@ export function MotivationalTips({ className }: MotivationalTipsProps) {
     {
       title: "Community Support 🤝",
       content: "You're not alone in this. Millions are on the same journey. Your struggle is valid and your effort is heroic."
+    },
+    {
+      title: "Advanced Breathing 🌬️",
+      content: "Try the 4-7-8 technique: Inhale for 4, hold for 7, exhale for 8. This activates your parasympathetic nervous system."
+    },
+    {
+      title: "Trigger Mapping 🗺️",
+      content: "Notice patterns: What time? What mood? What environment? Awareness is the first step to breaking automatic responses."
     }
   ];
+
+  const tips = hasFeature('distraction-toolkit') ? premiumTips : basicTips;
 
   const getNextTip = () => {
     setCurrentTipIndex((prev) => (prev + 1) % tips.length);
@@ -52,13 +70,27 @@ export function MotivationalTips({ className }: MotivationalTipsProps) {
 
   const currentTip = tips[currentTipIndex];
 
+  if (!hasFeature('motivational-tips')) {
+    return (
+      <UpgradePrompt
+        className={className}
+        feature="Advanced Tips & Strategies"
+        description="Get access to proven techniques and personalized strategies to overcome urges and build lasting habits."
+        requiredTier="basic"
+        onUpgrade={() => onOpenPricing?.()}
+      />
+    );
+  }
+
   return (
     <Card className={cn("p-6", className)}>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Lightbulb className="h-5 w-5 text-warning" />
-            <h3 className="text-lg font-semibold">Quick Tip</h3>
+            <h3 className="text-lg font-semibold">
+              {hasFeature('distraction-toolkit') ? 'Advanced Tips' : 'Quick Tips'}
+            </h3>
           </div>
           <Button
             variant="ghost"
@@ -97,6 +129,16 @@ export function MotivationalTips({ className }: MotivationalTipsProps) {
 
         <div className="text-center text-xs text-muted-foreground bg-accent/20 p-2 rounded">
           💡 Tip {currentTipIndex + 1} of {tips.length} - Click refresh for more wisdom!
+          {!hasFeature('distraction-toolkit') && (
+            <Button 
+              variant="link" 
+              size="sm" 
+              className="ml-2 h-auto p-0 text-xs text-primary"
+              onClick={() => onOpenPricing?.()}
+            >
+              Unlock more tips →
+            </Button>
+          )}
         </div>
       </div>
     </Card>

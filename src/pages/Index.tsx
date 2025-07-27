@@ -1,12 +1,19 @@
+import { useState } from "react";
 import { StreakCounter } from "@/components/StreakCounter";
 import { DailyCheckIn } from "@/components/DailyCheckIn";
 import { ProgressCalendar } from "@/components/ProgressCalendar";
 import { MotivationalTips } from "@/components/MotivationalTips";
 import { WeeklyStats } from "@/components/WeeklyStats";
+import { PricingDialog } from "@/components/PricingDialog";
 import { useHabitTracker } from "@/hooks/useHabitTracker";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Crown } from "lucide-react";
 
 const Index = () => {
+  const [showPricing, setShowPricing] = useState(false);
+  
   const { 
     data, 
     checkIn, 
@@ -15,10 +22,12 @@ const Index = () => {
     getWeeklyStats 
   } = useHabitTracker();
   
+  const { subscriptionData, useTrialDay, isTrialExpired } = useSubscription();
   const { toast } = useToast();
 
   const handleCheckIn = (success: boolean) => {
     checkIn(success);
+    useTrialDay(); // Use a trial day when checking in
     
     if (success) {
       toast({
@@ -40,12 +49,35 @@ const Index = () => {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-fire bg-clip-text text-transparent">
-            Streak Master
-          </h1>
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <h1 className="text-4xl font-bold bg-gradient-fire bg-clip-text text-transparent">
+              Streak Master
+            </h1>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPricing(true)}
+              className="flex items-center gap-2"
+            >
+              <Crown className="h-4 w-4" />
+              {subscriptionData.tier === 'free' ? 'Upgrade' : 'Plans'}
+            </Button>
+          </div>
           <p className="text-muted-foreground">
             Build your freedom, one day at a time 🌟
           </p>
+          {subscriptionData.isTrialActive && (
+            <p className="text-sm text-warning mt-2">
+              ⏰ Trial: {subscriptionData.trialDaysRemaining} days remaining
+            </p>
+          )}
+          {isTrialExpired && (
+            <div className="mt-4 p-3 bg-warning/10 border border-warning/20 rounded-lg">
+              <p className="text-sm text-warning">
+                🔒 Trial expired. Upgrade to continue your journey!
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Main Content Grid */}
@@ -76,7 +108,7 @@ const Index = () => {
 
           {/* Motivational Tips */}
           <div className="md:col-span-2 lg:col-span-3">
-            <MotivationalTips />
+            <MotivationalTips onOpenPricing={() => setShowPricing(true)} />
           </div>
         </div>
 
@@ -95,6 +127,11 @@ const Index = () => {
           </div>
         )}
       </div>
+
+      <PricingDialog 
+        open={showPricing} 
+        onOpenChange={setShowPricing}
+      />
     </div>
   );
 };
